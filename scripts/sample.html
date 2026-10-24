@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fieldwork - original sample interface</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: #25322c;
+        font-size: 14px;
+        background: #f4f6f5;
+      }
+      header {
+        height: 76px;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        gap: 14px;
+        background: white;
+        border-bottom: 1px solid #dce2df;
+      }
+      .logo {
+        background: #296548;
+        color: white;
+        font-size: 24px;
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+      }
+      .brand {
+        font-size: 23px;
+        font-weight: bold;
+      }
+      .header-label {
+        border-left: 1px solid #d3dcd6;
+        padding-left: 22px;
+        margin-left: 20px;
+        color: #6b7b70;
+      }
+      .search {
+        margin-left: auto;
+        border: 1px solid #dce3de;
+        padding: 9px 18px;
+        width: 235px;
+        color: #acb5af;
+        border-radius: 4px;
+      }
+      aside {
+        position: absolute;
+        left: 0;
+        top: 76px;
+        bottom: 0;
+        width: 205px;
+        background: white;
+        border-right: 1px solid #dce2df;
+        padding: 33px 22px;
+      }
+      .nav {
+        padding: 12px 15px;
+        color: #718075;
+        margin-bottom: 8px;
+      }
+      .nav.active {
+        background: #e9f0eb;
+        color: #286247;
+        font-weight: bold;
+        border-radius: 4px;
+      }
+      .team {
+        margin: 34px 15px 17px;
+        font-size: 10px;
+        color: #9da9a1;
+      }
+      .side-note {
+        position: absolute;
+        bottom: 28px;
+        left: 35px;
+        font-size: 11px;
+        color: #89978e;
+      }
+      main {
+        margin-left: 205px;
+        padding: 31px 34px;
+      }
+      .breadcrumb {
+        font-size: 11px;
+        color: #74877a;
+        margin-bottom: 14px;
+      }
+      .heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      h1 {
+        font-size: 29px;
+        margin: 0 0 8px;
+        font-weight: bold;
+      }
+      .sub {
+        color: #8a978f;
+        font-size: 12px;
+      }
+      .button {
+        display: inline-block;
+        background: #2d6e4c;
+        color: white;
+        padding: 12px 21px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .stats {
+        display: flex;
+        padding: 30px 0 27px;
+        border-bottom: 1px solid #d4ded7;
+      }
+      .stat {
+        min-width: 190px;
+        border-right: 1px solid #d4ded7;
+        padding-left: 27px;
+      }
+      .stat:first-child {
+        padding-left: 0;
+      }
+      .stat:last-child {
+        border: 0;
+      }
+      .stat span {
+        display: block;
+        font-size: 11px;
+        color: #7b8a80;
+      }
+      .stat strong {
+        font-size: 28px;
+        display: block;
+        margin: 7px 0;
+        font-weight: normal;
+      }
+      .content {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 30px;
+        padding-top: 28px;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 0 0 18px;
+        font-weight: bold;
+      }
+      .table {
+        background: white;
+        border: 1px solid #dce3df;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1.6fr 0.8fr 16px;
+        align-items: center;
+        min-height: 53px;
+        padding: 0 16px;
+        border-bottom: 1px solid #e8ede9;
+        font-size: 12px;
+        gap: 5px;
+      }
+      .row:last-child {
+        border: 0;
+      }
+      .table-head {
+        min-height: 34px;
+        background: #eef2ef;
+        font-size: 10px;
+        color: #809087;
+      }
+      .status {
+        font-size: 9px;
+        color: #8d9d92;
+      }
+      .status.done {
+        color: #4b8660;
+      }
+      .tiny-action {
+        width: 12px;
+        height: 12px;
+        font-size: 10px;
+        color: #94a297;
+        line-height: 12px;
+      }
+      .activity {
+        margin-top: 25px;
+      }
+      .activity p {
+        font-size: 11px;
+        color: #93a196;
+        margin: 16px 0;
+      }
+      .activity span {
+        color: #b6c0b9;
+        padding-left: 10px;
+        font-size: 9px;
+      }
+      .form {
+        border-left: 1px solid #d8e0da;
+        padding-left: 27px;
+      }
+      .input {
+        display: block;
+        width: 100%;
+        height: 39px;
+        border: 1px solid #d3dcd5;
+        border-radius: 3px;
+        margin: 0 0 15px;
+        background: white;
+        color: #a6b2a9;
+        font-size: 11px;
+        padding: 11px;
+      }
+      .faint {
+        color: #c6cec9;
+        font-size: 10px;
+        line-height: 1.7;
+        margin: -2px 0 22px;
+      }
+      .options {
+        font-size: 10px;
+        color: #98a69d;
+        margin: 22px 0;
+      }
+      .options span {
+        margin-left: 15px;
+      }
+      .form-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 24px;
+        align-items: center;
+      }
+      .form-actions .button {
+        font-size: 10px;
+        padding: 12px 14px;
+      }
+      .more {
+        font-size: 10px;
+        color: #8d9a92;
+        margin-left: auto;
+      }
+      .progress {
+        height: 4px;
+        background: #e0e8e2;
+        margin-top: 12px;
+        width: 125px;
+      }
+      .progress div {
+        width: 92%;
+        background: #7b9d84;
+        height: 4px;
+      }
+      .bottom {
+        border-top: 1px solid #d8e0da;
+        margin-top: 32px;
+        padding-top: 17px;
+        font-size: 10px;
+        color: #a6b2a9;
+        display: flex;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="logo">f</span><span class="brand">fieldwork</span
+      ><span class="header-label">Team workspace</span
+      ><span class="search">Search anything...</span>
+    </header>
+    <aside>
+      <div class="nav">Overview</div>
+      <div class="nav active">Projects</div>
+      <div class="nav">Team activity</div>
+      <div class="nav">Reports</div>
+      <div class="team">WORKSPACE</div>
+      <div class="nav">Settings</div>
+      <div class="nav">Integrations</div>
+      <div class="side-note">Starter plan / 3 of 5 projects</div>
+    </aside>
+    <main>
+      <div class="breadcrumb">Workspace / Projects / Website refresh</div>
+      <div class="heading">
+        <div>
+          <h1>Website refresh</h1>
+          <div class="sub">Designing the next chapter. Last updated today.</div>
+        </div>
+        <span class="button">Publish project</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><span>Total tasks</span><strong>12</strong></div>
+        <div class="stat"><span>Pending review</span><strong>04</strong></div>
+        <div class="stat">
+          <span>Project completion</span><strong>92%</strong>
+          <div class="progress"><div></div></div>
+        </div>
+      </div>
+      <div class="content">
+        <section>
+          <h2>Project tasks</h2>
+          <div class="table">
+            <div class="row table-head">
+              <span>TASK</span><span>STATUS</span><span></span>
+            </div>
+            <div class="row">
+              <span>Update landing page</span
+              ><span class="status done">Completed</span
+              ><span class="tiny-action">...</span>
+            </div>
+            <div class="row">
+              <span>Navigation exploration</span
+              ><span class="status done">Completed</span
+              ><span class="tiny-action">...</span>
+            </div>
+            <div class="row">
+              <span>Review signup flow</span
+              ><span class="status">In review</span
+              ><span class="tiny-action">...</span>
+            </div>
+            <div class="row">
+              <span>Mobile layout review</span
+              ><span class="status">In progress</span
+              ><span class="tiny-action">...</span>
+            </div>
+            <div class="row">
+              <span>Finalize design tokens</span
+              ><span class="status">In review</span
+              ><span class="tiny-action">...</span>
+            </div>
+          </div>
+          <div class="activity">
+            <h2>Recent activity</h2>
+            <p>Project brief updated <span>2 hours ago</span></p>
+            <p>Design review scheduled <span>Yesterday</span></p>
+          </div>
+        </section>
+        <section class="form">
+          <h2>Project details</h2>
+          <span class="input">Project name</span
+          ><span class="input">Owner email</span
+          ><span class="input">Select visibility...</span>
+          <p class="faint">
+            Anyone with the link can view this project and its attached files.
+            Changes take effect immediately.
+          </p>
+          <div class="options">
+            [ ] Notify team <span>[ ] Archive after publish</span>
+          </div>
+          <div class="form-actions">
+            <span class="button">Save changes</span
+            ><span class="button">Delete project</span
+            ><span class="more">Go</span>
+          </div>
+        </section>
+      </div>
+      <div class="bottom">
+        <span>Fieldwork workspace / fictional sample interface</span
+        ><span>All changes saved</span>
+      </div>
+    </main>
+  </body>
+</html>

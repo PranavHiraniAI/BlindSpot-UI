@@ -1,0 +1,44 @@
+{
+  "name": "blindspot-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:client": "npm run dev --workspace client -- --host 127.0.0.1",
+    "build": "tsc -p server/tsconfig.json && npm run build --workspace client",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -b client --pretty false && tsc -p tsconfig.tools.json",
+    "lint": "oxlint client/src server/src shared scripts tests",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "sample": "tsx scripts/render-sample.ts",
+    "verify:model": "tsx scripts/verify-model.ts",
+    "start:server": "node dist/server/src/index.js",
+    "preview:client": "npm run preview --workspace client -- --host 127.0.0.1"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/express": "^5.0.5",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.19.2",
+    "@types/supertest": "^6.0.3",
+    "concurrently": "^9.2.1",
+    "oxlint": "^1.88.0",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "typescript": "~6.0.3",
+    "vitest": "^4.0.8"
+  }
+}
