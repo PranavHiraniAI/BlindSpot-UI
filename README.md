@@ -31,7 +31,7 @@ npm install
 Copy-Item .env.example server/.env
 ```
 
-Set `GEMINI_API_KEY` privately in `server/.env`. Do not paste it in chat, commit it, or put it in a `VITE_*` variable. Keep the default `GEMMA_MODEL` unless you have explicitly verified another intended model. Restart the backend after changing its environment file.
+Set `GEMINI_API_KEY` privately in `server/.env` or a root `.env` file. Existing process environment variables take precedence, followed by `server/.env`, then root `.env`. Do not paste the key in chat, commit it, or put it in a `VITE_*` variable. Keep the default `GEMMA_MODEL` unless you have explicitly verified another intended model. Restart the backend after changing its environment file.
 
 Start both processes:
 
@@ -117,7 +117,7 @@ Errors use `{ "error": { "code": "...", "message": "..." } }`:
 | 502 | Provider failure, refused/incomplete output, or invalid model JSON |
 | 500 | Unexpected application failure, with sanitized details |
 
-`GET /api/health` reports server status, whether a key is configured, and the configured model name. It does **not** expose the key or certify that model access works. The provider deadline is approximately 60 seconds. Client cancellation may not stop provider execution or associated charges.
+`GET /api/health` reports server status, whether a key is configured, the configured model name, and the upload limit. It does **not** expose the key or certify that model access works. The provider deadline is approximately three minutes; Gemma reasoning can exceed one minute before producing its final JSON. Client cancellation may not stop provider execution or associated charges.
 
 ## Security and privacy
 
@@ -153,7 +153,7 @@ Explicit live check (requires a key and model access):
 npm run verify:model
 ```
 
-This inspects model metadata, then submits the original sample image through the real SDK and validates its report. Missing credentials or denied/unavailable model access fail the check; no fallback is used. During implementation, the live check was **blocked by an absent API key**. A successful real screenshot-to-Gemma inference has therefore **not been verified** in this environment.
+This inspects model metadata, then submits the original sample image through the real SDK and validates its report. Missing credentials or denied/unavailable model access fail the check; no fallback is used. After a private API key was configured, the exact `gemma-4-26b-a4b-it` endpoint successfully returned a Zod-validated report with four findings for the sample screenshot. An initial 60-second attempt timed out, so the bounded provider deadline was increased to three minutes. Findings and timing may vary between runs.
 
 Run built artifacts in separate root terminals:
 
@@ -166,6 +166,22 @@ npm run preview:client
 ```
 
 Vite preview uses the same API proxy (default preview port 4173). This is a local preview, not production deployment automation.
+
+## Vercel deployment
+
+Production: <https://blindspot-ui.vercel.app>. A real deployed sample audit returned four Zod-validated findings in approximately 142 seconds; dashboard rendering, Markdown copy, and desktop/mobile layouts were checked against that live response. Timing and findings can vary.
+
+The repository includes a Vite static frontend and a single Node.js Vercel Function exporting the existing Express app. `vercel.json` builds from the repository root, serves `client/dist`, and routes `/api/*` to `api/index.ts`. The API and frontend share an origin; the local Vite proxy is not used in production. No database, remote upload storage, or browser-side API key is added.
+
+Create a **new** Vercel project from the repository root, choose Node.js 24.x, and keep the root directory at the repository root rather than `client`. The included configuration sets the build command and output directory. The function duration is capped at 240 seconds, allowing time for the model's bounded 180-second deadline plus image validation and response handling.
+
+Set `GEMINI_API_KEY` privately in **Vercel Project Settings > Environment Variables**, server-side for Production (and Preview if needed). Keep `GEMMA_MODEL=gemma-4-26b-a4b-it`, or explicitly set that value. Redeploy after adding/changing environment variables. No local `.env` file is uploaded. Missing credentials produce a setup error, not fake findings. A successful deployment does not establish access to the configured Gemma API model.
+
+**Hosted upload limit: 4 MiB.** Vercel has a [4.5 MB function request-body limit](https://vercel.com/docs/functions/limitations#request-body-size), which includes multipart overhead. The app therefore enforces and displays a conservative 4 MiB screenshot limit when Vercel sets `VERCEL=1`; local development retains 5 MiB. A platform-level 413 response is also handled gracefully. Larger uploads would require a different architecture, not just increasing Multer's limit.
+
+After deployment, verify `/`, `/sample-ui.png`, `/api/health`, and a real sample upload to `/api/audit`. Health indicates configuration, not successful model authorization. Before enabling a billable API key on a public URL, configure provider quotas/spend alerts and review Vercel protection/rate-limiting settings; this MVP does not add authentication or a distributed rate limiter.
+
+Vercel project metadata, credentials, local environment files, build/test output, and the unrelated hackathon PDF are excluded from Git and/or deployment uploads. Vercel is the hosting provider, subject to its own [terms](https://vercel.com/legal/terms).
 
 ## Structure
 

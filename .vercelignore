@@ -1,0 +1,15 @@
+.git/
+.vercel/
+node_modules/
+**/node_modules/
+dist/
+client/dist/
+test-results/
+playwright-report/
+.env
+.env.*
+**/.env
+**/.env.*
+*.log
+*.tsbuildinfo
+Hacktoberfest_HackDay_Ahmedabad.pptx.pdf

@@ -45,6 +45,43 @@ async function selectSample(page: Page) {
   ).toBeVisible();
 }
 
+test("hosted upload limits and plain-text platform errors are understandable", async ({
+  page,
+}) => {
+  let requests = 0;
+  await page.route("**/api/health", (route) =>
+    route.fulfill({
+      json: {
+        status: "ok",
+        configured: false,
+        model: "gemma-4-26b-a4b-it",
+        maxImageBytes: 4 * 1024 * 1024,
+      },
+    }),
+  );
+  await page.route("**/api/audit", (route) => {
+    requests++;
+    return route.fulfill({
+      status: 413,
+      contentType: "text/plain",
+      body: "FUNCTION_PAYLOAD_TOO_LARGE",
+    });
+  });
+  await page.goto("/");
+  await expect(page.getByText(/Up to 4 MB/)).toBeVisible();
+  await page.getByLabel("Upload screenshot").setInputFiles({
+    name: "oversized.png",
+    mimeType: "image/png",
+    buffer: Buffer.alloc(4 * 1024 * 1024 + 1),
+  });
+  await expect(page.getByRole("alert")).toContainText("no larger than 4 MB");
+  expect(requests).toBe(0);
+  await selectSample(page);
+  await page.getByRole("button", { name: "Analyze UI", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("server upload limit");
+  expect(requests).toBe(1);
+});
+
 test("keyboard controls select a sample, open a modal and restore focus", async ({
   page,
 }) => {

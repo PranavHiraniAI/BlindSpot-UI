@@ -118,6 +118,27 @@ describe("model output boundary", () => {
 });
 
 describe("POST /api/audit", () => {
+  it("advertises the Vercel-safe upload limit without exposing secrets", async () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("GEMINI_API_KEY", "test-only-do-not-expose");
+    const response = await request(createApp()).get("/api/health");
+    expect(response.status).toBe(200);
+    expect(response.body.maxImageBytes).toBe(4 * 1024 * 1024);
+    expect(response.body.configured).toBe(true);
+    expect(JSON.stringify(response.body)).not.toContain(
+      "test-only-do-not-expose",
+    );
+  });
+  it("rejects Vercel screenshots above 4 MiB before calling the model", async () => {
+    vi.stubEnv("VERCEL", "1");
+    const analyze = vi.fn();
+    const response = await request(createApp(analyze))
+      .post("/api/audit")
+      .attach("screenshot", Buffer.alloc(4 * 1024 * 1024 + 1), "oversized.png");
+    expect(response.status).toBe(413);
+    expect(response.body.error.message).toContain("4 MB");
+    expect(analyze).not.toHaveBeenCalled();
+  });
   it.each(["png", "jpeg", "webp"] as const)(
     "accepts real %s bytes and passes them to the analysis boundary",
     async (format) => {

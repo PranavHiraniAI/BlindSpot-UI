@@ -1,29 +1,9 @@
 import express, { type ErrorRequestHandler } from "express";
 import multer from "multer";
 import sharp from "sharp";
-import {
-  auditSchema,
-  IMAGE_TYPES,
-  MAX_IMAGE_BYTES,
-} from "../../shared/audit.js";
+import { auditSchema, IMAGE_TYPES } from "../../shared/audit.js";
 import { analyzeImage, AuditError } from "./audit.js";
 import { getConfig } from "./config.js";
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fields: 0, parts: 2 },
-  fileFilter: (_request, file, done) => {
-    if (!(IMAGE_TYPES as readonly string[]).includes(file.mimetype)) {
-      done(
-        new AuditError(
-          415,
-          "UNSUPPORTED_IMAGE",
-          "Choose a PNG, JPEG, or WebP screenshot.",
-        ),
-      );
-    } else done(null, true);
-  },
-});
 
 export async function validateImage(
   bytes: Buffer,
@@ -61,6 +41,22 @@ export async function validateImage(
 }
 
 export function createApp(analyze: typeof analyzeImage = analyzeImage) {
+  const { maxImageBytes } = getConfig();
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maxImageBytes, files: 1, fields: 0, parts: 2 },
+    fileFilter: (_request, file, done) => {
+      if (!(IMAGE_TYPES as readonly string[]).includes(file.mimetype)) {
+        done(
+          new AuditError(
+            415,
+            "UNSUPPORTED_IMAGE",
+            "Choose a PNG, JPEG, or WebP screenshot.",
+          ),
+        );
+      } else done(null, true);
+    },
+  });
   const app = express();
   app.disable("x-powered-by");
   app.use("/api", (_request, response, next) => {
@@ -72,7 +68,12 @@ export function createApp(analyze: typeof analyzeImage = analyzeImage) {
   });
   app.get("/api/health", (_request, response) => {
     const { apiKey, model } = getConfig();
-    response.json({ status: "ok", configured: Boolean(apiKey), model });
+    response.json({
+      status: "ok",
+      configured: Boolean(apiKey),
+      model,
+      maxImageBytes,
+    });
   });
   app.post(
     "/api/audit",
@@ -100,11 +101,9 @@ export function createApp(analyze: typeof analyzeImage = analyzeImage) {
     },
   );
   app.use("/api", (_request, response) =>
-    response
-      .status(404)
-      .json({
-        error: { code: "NOT_FOUND", message: "API endpoint not found." },
-      }),
+    response.status(404).json({
+      error: { code: "NOT_FOUND", message: "API endpoint not found." },
+    }),
   );
   const onError: ErrorRequestHandler = (
     error: unknown,
@@ -120,7 +119,7 @@ export function createApp(analyze: typeof analyzeImage = analyzeImage) {
           code: tooLarge ? "IMAGE_TOO_LARGE" : "INVALID_UPLOAD",
           message:
             tooLarge ?
-              "The screenshot exceeds the 5 MB upload limit."
+              `The screenshot exceeds the ${maxImageBytes / 1024 / 1024} MB upload limit.`
             : "Upload exactly one screenshot file and no extra fields.",
         },
       });

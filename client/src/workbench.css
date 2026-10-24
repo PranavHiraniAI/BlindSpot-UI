@@ -142,7 +142,7 @@ h2 { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight
 .category { font-size: 9px; color: #b5c2b9; text-transform: capitalize; border-left: 1px solid #4b574f; padding-left: 9px; }
 .confidence { margin-left: auto; font: 9px var(--mono); color: #a6b8ab; }
 .finding h3 { font-size: 15px; font-weight: 500; line-height: 1.55; display: flex; gap: 8px; margin: 13px 0; }
-.finding-number { font: 10px/23px var(--mono); color: #93b39c; }
+.finding-number { flex: 0 0 18px; white-space: nowrap; font: 10px/23px var(--mono); color: #93b39c; }
 .finding dl { margin: 0; display: grid; gap: 12px; }
 .finding dt { font-size: 9px; color: #a4b3a9; margin-bottom: 5px; text-transform: uppercase; }
 .finding dd { margin: 0; color: #d0d9d3; font-size: 11px; line-height: 1.8; white-space: pre-wrap; }

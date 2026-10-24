@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const AUDIT_TIMEOUT_MS = 180_000;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 export const severities = ["high", "medium", "low"] as const;
 

@@ -7,4 +7,9 @@ dist/
 *.tsbuildinfo
 test-results/
 playwright-report/
+.vercel/
 .DS_Store
+.vercel
+.env*
+!.env.example
+/Hacktoberfest_HackDay_Ahmedabad.pptx.pdf

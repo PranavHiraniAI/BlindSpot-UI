@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, ArrowRight, Check, CheckCheck, ChevronRight, CircleAlert, Copy,
   Crosshair, Expand, FileImage, CodeXml, ImagePlus, LoaderCircle, ScanEye, ScanSearch,
   ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
-import { auditSchema, IMAGE_TYPES, MAX_IMAGE_BYTES, prioritize, severities,
+import { AUDIT_TIMEOUT_MS, auditSchema, IMAGE_TYPES, MAX_IMAGE_BYTES, prioritize, severities,
   type AuditReport, type Finding, type Severity } from '../../shared/audit'
 import { reportMarkdown } from './report'
 
 type Selection = { file: File; url: string }
-type Connection = { configured: boolean; model: string }
+type Connection = { configured: boolean; model: string; maxImageBytes?: number }
 
 function FindingCard({ finding, index, active, onSelect }: {
   finding: Finding; index: number; active: boolean; onSelect: (index: number) => void
@@ -48,6 +48,8 @@ function App() {
   const previewDialog = useRef<HTMLDialogElement>(null)
   const request = useRef<AbortController | null>(null)
   const busy = loading || sampleLoading
+  const maxImageBytes = Math.min(connection?.maxImageBytes ?? 4 * 1024 * 1024, MAX_IMAGE_BYTES)
+  const maxImageMb = maxImageBytes / 1024 / 1024
 
   useEffect(() => {
     const controller = new AbortController()
@@ -71,8 +73,8 @@ function App() {
     if (!(IMAGE_TYPES as readonly string[]).includes(file.type)) {
       setError('Choose a PNG, JPEG, or WebP screenshot.'); return
     }
-    if (file.size > MAX_IMAGE_BYTES || file.size === 0) {
-      setError('Choose a nonempty screenshot no larger than 5 MB.'); return
+    if (file.size > maxImageBytes || file.size === 0) {
+      setError(`Choose a nonempty screenshot no larger than ${maxImageMb} MB.`); return
     }
     request.current?.abort()
     setSelection({ file, url: URL.createObjectURL(file) })
@@ -87,7 +89,7 @@ function App() {
       if (!response.ok) throw new Error('The sample screenshot could not be loaded.')
       const blob = await response.blob()
       const file = new File([blob], 'sample-workspace.png', { type: 'image/png' })
-      if (file.size === 0 || file.size > MAX_IMAGE_BYTES) throw new Error('The sample image is not valid.')
+      if (file.size === 0 || file.size > maxImageBytes) throw new Error('The sample image is not valid.')
       request.current?.abort()
       setSelection({ file, url: URL.createObjectURL(file) })
       setReport(null); setFilter('all'); setActiveRegion(null); setDimensions(''); setCopyStatus('')
@@ -101,11 +103,12 @@ function App() {
     const controller = new AbortController()
     request.current = controller
     setLoading(true); setElapsed(0); setReport(null); setError(''); setCopyStatus(''); setActiveRegion(null); setFilter('all')
-    const timeout = window.setTimeout(() => controller.abort(), 75_000)
+    const timeout = window.setTimeout(() => controller.abort(), AUDIT_TIMEOUT_MS + 15_000)
     try {
       const form = new FormData()
       form.append('screenshot', selection.file)
       const response = await fetch('/api/audit', { method: 'POST', body: form, signal: controller.signal })
+      if (response.status === 413) throw new Error(`The screenshot exceeds the server upload limit. Choose an image no larger than ${maxImageMb} MB.`)
       const payload = await response.json().catch(() => { throw new Error('The server returned an unreadable response. Check that the API is running.') })
       if (!response.ok) throw new Error(typeof payload?.error?.message === 'string' ? payload.error.message : 'The analysis failed. Please retry.')
       const parsed = auditSchema.safeParse(payload)
@@ -181,7 +184,7 @@ function App() {
             <div className="preview-toolbar"><span className="mono">{dimensions || 'Loading preview'}</span><label className="region-toggle"><input type="checkbox" checked={regionsVisible} disabled={!report?.findings.some(finding => finding.region)} onChange={event => setRegionsVisible(event.target.checked)} /> Regions</label><button className="icon-button" title="Expand screenshot" aria-label="Expand screenshot" onClick={() => previewDialog.current?.showModal()}><Expand size={16} /></button></div>
             <button className="text-button change-image" disabled={busy} onClick={() => input.current?.click()}><ImagePlus size={15} aria-hidden="true" /> Replace screenshot</button>
           </> : <div className={`drop-zone ${dragging ? 'is-dragging' : ''}`} onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); if (event.dataTransfer.files.length !== 1) { setError('Choose exactly one screenshot.'); return }; selectFile(event.dataTransfer.files[0]) }}>
-            <span className="upload-symbol"><Upload size={26} strokeWidth={1.5} aria-hidden="true" /></span><h3>A fresh perspective starts here.</h3><p>PNG, JPEG or WebP <span>/</span> Up to 5 MB</p><button className="button secondary" disabled={busy} onClick={() => input.current?.click()}><ImagePlus size={16} aria-hidden="true" /> Choose screenshot</button>
+            <span className="upload-symbol"><Upload size={26} strokeWidth={1.5} aria-hidden="true" /></span><h3>A fresh perspective starts here.</h3><p>PNG, JPEG or WebP <span>/</span> Up to {maxImageMb} MB</p><button className="button secondary" disabled={busy} onClick={() => input.current?.click()}><ImagePlus size={16} aria-hidden="true" /> Choose screenshot</button>
           </div>}
 
           <button className="sample-button" onClick={loadSample} disabled={busy}><span className="sample-thumbnail"><img src="/sample-ui.png" alt="" /></span><span><strong>{sampleLoading ? 'Loading sample...' : 'Use sample screenshot'}</strong><span>Fictional project dashboard</span></span><ArrowRight size={17} aria-hidden="true" /></button>
@@ -194,7 +197,7 @@ function App() {
           <div className="section-heading"><h2 id="report-heading"><span className="section-number">02</span> Audit report</h2><span className={`report-status ${report ? 'complete' : ''}`}>{loading ? 'IN PROGRESS' : report ? 'COMPLETE' : 'AWAITING ANALYSIS'}</span></div>
           <div className="metrics" aria-label="Finding counts"><div className="metric total"><span>Total findings</span><strong>{report ? report.findings.length.toString().padStart(2, '0') : '--'}</strong></div>{severities.map(severity => <div className={`metric ${severity}`} key={severity}><span><span className="severity-dot" />{severity}</span><strong>{report ? counts[severity].toString().padStart(2, '0') : '--'}</strong></div>)}</div>
           <div className="report-actions"><div className="filters" role="group" aria-label="Filter by severity">{(['all', ...severities] as const).map(severity => <button key={severity} aria-pressed={filter === severity} onClick={() => setFilter(severity)} disabled={!report} className={filter === severity ? 'active' : ''}>{severity}</button>)}</div><div className="exports"><button className="icon-button" title="Export all findings as JSON" aria-label="Export JSON" onClick={exportJson} disabled={!report}><ArrowDownToLine size={17} /></button><button className="icon-button" title="Copy full report as Markdown" aria-label="Copy Markdown" onClick={copyMarkdown} disabled={!report}>{copyStatus === 'Markdown copied to clipboard.' ? <CheckCheck size={17} /> : <Copy size={17} />}</button></div></div>
-          <div role="status" aria-live="polite" className={copyStatus ? 'copy-status' : 'sr-only'}>{copyStatus || (loading ? 'Analyzing screenshot with Gemma. This may take up to a minute.' : report ? `Analysis complete. ${report.findings.length} potential findings.` : '')}</div>
+          <div role="status" aria-live="polite" className={copyStatus ? 'copy-status' : 'sr-only'}>{copyStatus || (loading ? 'Analyzing screenshot with Gemma. This may take up to three minutes.' : report ? `Analysis complete. ${report.findings.length} potential findings.` : '')}</div>
           {report ? <>
             <section className="summary" aria-labelledby="summary-heading"><h3 id="summary-heading"><ScanSearch size={16} aria-hidden="true" />The overview</h3><p>{report.summary}</p></section>
             <div className="findings-heading"><span className="eyebrow">FINDINGS</span><span className="mono subtle">{visible.length} of {report.findings.length}</span></div>

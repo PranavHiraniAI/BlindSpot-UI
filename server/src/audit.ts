@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import {
+  AUDIT_TIMEOUT_MS,
   auditSchema,
   prioritize,
   type AuditReport,
@@ -119,9 +120,9 @@ export async function analyzeImage(
     throw new AuditError(
       503,
       "MISSING_API_KEY",
-      "Set GEMINI_API_KEY in server/.env, restart the backend, then retry. The sample also requires a real model connection.",
+      "Configure GEMINI_API_KEY in the server environment (server/.env locally, project environment variables on Vercel), then restart or redeploy. The sample also requires a real model connection.",
     );
-  const deadline = AbortSignal.timeout(60_000);
+  const deadline = AbortSignal.timeout(AUDIT_TIMEOUT_MS);
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
@@ -137,7 +138,7 @@ export async function analyzeImage(
       ],
       config: {
         maxOutputTokens: 8192,
-        httpOptions: { timeout: 60_000 },
+        httpOptions: { timeout: AUDIT_TIMEOUT_MS },
         abortSignal: signal ? AbortSignal.any([signal, deadline]) : deadline,
       },
     });
